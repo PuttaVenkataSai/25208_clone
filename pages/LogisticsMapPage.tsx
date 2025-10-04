@@ -1,35 +1,17 @@
 import { useRef, useState, useMemo, useEffect, FC } from 'react';
-import { createRoot } from 'react-dom/client';
 import { useData } from '../context/DataContext';
 import { MOCK_DESTINATIONS } from '../constants';
 import { Loader2, Train, Warehouse } from 'lucide-react';
 import { RakeSuggestion } from '../types';
 
-declare const mapmyindia: any;
-
-declare global {
-
-    interface Window {
-
-        mapMyIndiaLoaded?: boolean;
-
-    }
-
-}
-const RakeMarker: FC = () => {
-    return (
-        <div className="cursor-pointer">
-            <Train size={32} className="text-sail-blue bg-white rounded-full p-1 shadow-lg" />
-        </div>
-    );
-};
+declare const L: any;
 
 const LogisticsMapPage: FC = () => {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const inventoryMarkersRef = useRef<{ [key: string]: any }>({});
     const rakeMarkersRef = useRef<{ [key: string]: any }>({});
-    const popupRef = useRef<any>(null);
+    const routeLayerRef = useRef<any>(null);
 
     const { inventories, rakePlans } = useData();
     const [mapStatus, setMapStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
@@ -48,80 +30,63 @@ const LogisticsMapPage: FC = () => {
 
         if (!source || !destCoords) return;
 
-        const routeCoordinates = [
-            [source.lon, source.lat],
-            [destCoords.lon, destCoords.lat]
+        if (routeLayerRef.current) {
+            map.removeLayer(routeLayerRef.current);
+        }
+
+        const latlngs = [
+            [source.lat, source.lon],
+            [destCoords.lat, destCoords.lon]
         ];
 
-        if (map.getLayer('highlight-route')) map.removeLayer('highlight-route');
-        if (map.getSource('highlight-route')) map.removeSource('highlight-route');
-
-        map.addSource('highlight-route', {
-            type: 'geojson',
-            data: { type: 'Feature', geometry: { type: 'LineString', coordinates: routeCoordinates } }
-        });
-
-        map.addLayer({
-            id: 'highlight-route',
-            type: 'line',
-            source: 'highlight-route',
-            paint: { 'line-color': '#FF6600', 'line-width': 3, 'line-dasharray': [2, 2] }
-        });
+        routeLayerRef.current = L.polyline(latlngs, {
+            color: '#FF6600',
+            weight: 3,
+            dashArray: '10, 10',
+            opacity: 0.8
+        }).addTo(map);
     };
 
     const removeHighlightRoute = () => {
         const map = mapInstanceRef.current;
-        if (!map) return;
-        if (map.getLayer('highlight-route')) map.removeLayer('highlight-route');
-        if (map.getSource('highlight-route')) map.removeSource('highlight-route');
+        if (!map || !routeLayerRef.current) return;
+        map.removeLayer(routeLayerRef.current);
+        routeLayerRef.current = null;
     };
 
-    // Effect for initializing the map, runs once.
     useEffect(() => {
-        if (!mapContainerRef.current) return;
-        let isMounted = true;
-        let attempts = 0;
-        const maxAttempts = 20;
-        const intervalTime = 500;
+        if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-        const initializeMap = () => {
-            try {
-                if (mapInstanceRef.current) return;
-
-                const map = new mapmyindia.Map(mapContainerRef.current, { center: [22, 82], zoom: 5 });
-                mapInstanceRef.current = map;
-
-                map.on('load', () => {
-                    if (isMounted) setMapStatus('loaded');
-                });
-                
-                map.on('click', () => setSelectedRakeId(null));
-            } catch (error) {
-                console.error("MapMyIndia initialization failed:", error);
-                if (isMounted) setMapStatus('error');
+        try {
+            if (typeof L === 'undefined') {
+                setMapStatus('error');
+                return;
             }
-        };
 
-        const attemptToLoadMap = () => {
-            if (window.mapMyIndiaLoaded) {
-                initializeMap();
-            } else if (attempts < maxAttempts) {
-                attempts++;
-                setTimeout(attemptToLoadMap, intervalTime);
-            } else {
-                if (isMounted) {
-                    console.error("MapMyIndia library did not load in time.");
-                    setMapStatus('error');
-                }
-            }
-        };
+            const map = L.map(mapContainerRef.current, {
+                center: [22, 82],
+                zoom: 5,
+                zoomControl: true
+            });
 
-        if (!mapInstanceRef.current) {
-            attemptToLoadMap();
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            mapInstanceRef.current = map;
+            setMapStatus('loaded');
+
+            map.on('click', () => {
+                setSelectedRakeId(null);
+            });
+
+        } catch (error) {
+            console.error("Map initialization failed:", error);
+            setMapStatus('error');
         }
 
         return () => {
-            isMounted = false;
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;
@@ -129,7 +94,6 @@ const LogisticsMapPage: FC = () => {
         };
     }, []);
 
-    // Effect for drawing/updating inventory markers
     useEffect(() => {
         const map = mapInstanceRef.current;
         if (mapStatus !== 'loaded' || !map) return;
@@ -138,20 +102,32 @@ const LogisticsMapPage: FC = () => {
         inventoryMarkersRef.current = {};
 
         inventories.forEach(inv => {
-            const el = document.createElement('div');
-            createRoot(el).render(<Warehouse size={28} className="text-sail-orange bg-white rounded-full p-1 shadow-md" />);
-            const marker = new mapmyindia.Marker({ element: el, position: [inv.lat, inv.lon] })
-                .setPopup(new mapmyindia.Popup({offset: 25}).setHTML(`<strong>${inv.baseName}</strong>`))
+            const icon = L.divIcon({
+                html: `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/>
+                        <path d="M6 18h12"/>
+                        <path d="M6 14h12"/>
+                        <path d="m6 10 6-3 6 3"/>
+                    </svg>
+                </div>`,
+                className: '',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            const marker = L.marker([inv.lat, inv.lon], { icon })
+                .bindPopup(`<strong>${inv.baseName}</strong><br/>Available Rakes: ${inv.availableRakes}`)
                 .addTo(map);
+
             inventoryMarkersRef.current[inv.baseId] = marker;
         });
     }, [mapStatus, inventories]);
 
-
     useEffect(() => {
         const map = mapInstanceRef.current;
         if (mapStatus !== 'loaded' || !map) return;
-        
+
         const currentMarkerIds = Object.keys(rakeMarkersRef.current);
         const inTransitPlanIds = inTransitPlans.map(p => p.rakeId);
 
@@ -165,30 +141,44 @@ const LogisticsMapPage: FC = () => {
         inTransitPlans.forEach(plan => {
             const { rakeId, currentLat, currentLon } = plan;
             if (typeof currentLat !== 'number' || typeof currentLon !== 'number') return;
-            
+
             if (rakeMarkersRef.current[rakeId]) {
-                rakeMarkersRef.current[rakeId].setLngLat([currentLon, currentLat]);
+                rakeMarkersRef.current[rakeId].setLatLng([currentLat, currentLon]);
             } else {
-                const el = document.createElement('div');
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
+                const icon = L.divIcon({
+                    html: `<div style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#003366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="16" height="16" x="4" y="3" rx="2"/>
+                            <path d="M4 11h16"/>
+                            <path d="M12 3v8"/>
+                            <path d="m8 19-2 3"/>
+                            <path d="m18 22-2-3"/>
+                            <path d="M8 15h0"/>
+                            <path d="M16 15h0"/>
+                        </svg>
+                    </div>`,
+                    className: '',
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18]
+                });
+
+                const marker = L.marker([currentLat, currentLon], { icon })
+                    .addTo(map);
+
+                marker.on('click', (e: any) => {
+                    L.DomEvent.stopPropagation(e);
                     setSelectedRakeId(plan.rakeId);
                 });
 
-                createRoot(el).render(<RakeMarker />);
-
-                const marker = new mapmyindia.Marker({ element: el, position: [currentLat, currentLon] }).addTo(map);
                 rakeMarkersRef.current[rakeId] = marker;
             }
         });
-
     }, [inTransitPlans, mapStatus]);
 
     useEffect(() => {
         const map = mapInstanceRef.current;
         if (!map) return;
 
-        popupRef.current?.remove();
         removeHighlightRoute();
 
         if (selectedRakeId) {
@@ -198,20 +188,23 @@ const LogisticsMapPage: FC = () => {
 
                 const progress = (plan.progress || 0) * 100;
                 const content = `
-                    <div class="w-64 p-1">
-                        <h4 class="font-bold text-sail-blue">${plan.rakeId}</h4>
-                        <p class="text-sm text-gray-600">${plan.base} &rarr; ${plan.destination}</p>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                            <div class="bg-green-600 h-2.5 rounded-full" style="width: ${progress}%"></div>
+                    <div style="width: 250px; padding: 8px;">
+                        <h4 style="font-weight: bold; color: #003366; margin: 0 0 4px 0;">${plan.rakeId}</h4>
+                        <p style="font-size: 14px; color: #666; margin: 0 0 8px 0;">${plan.base} → ${plan.destination}</p>
+                        <div style="width: 100%; background: #e5e7eb; border-radius: 9999px; height: 10px; margin-bottom: 4px;">
+                            <div style="background: #16a34a; height: 10px; border-radius: 9999px; width: ${progress}%;"></div>
                         </div>
-                        <p class="text-xs text-gray-500 text-right mt-1">${Math.round(progress)}% Complete</p>
+                        <p style="font-size: 12px; color: #999; text-align: right; margin: 0;">${Math.round(progress)}% Complete</p>
                     </div>
                 `;
 
-                popupRef.current = new mapmyindia.Popup({ closeButton: false, offset: 25, className: 'sail-map-popup' })
-                    .setLngLat([plan.currentLon, plan.currentLat])
-                    .setHTML(content)
-                    .addTo(map);
+                const popup = L.popup({
+                    closeButton: false,
+                    offset: [0, -18]
+                })
+                    .setLatLng([plan.currentLat, plan.currentLon])
+                    .setContent(content)
+                    .openOn(map);
             }
         }
     }, [selectedRakeId, inTransitPlans, inventories]);
@@ -224,7 +217,7 @@ const LogisticsMapPage: FC = () => {
             </div>
             <div className="flex-grow relative bg-gray-200">
                 <div ref={mapContainerRef} className="absolute inset-0"></div>
-                
+
                 {mapStatus === 'loading' && (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-80 p-4 pointer-events-none">
                         <div className="flex items-center gap-2 text-gray-600"><Loader2 className="animate-spin" /><span>Loading map...</span></div>
@@ -238,7 +231,7 @@ const LogisticsMapPage: FC = () => {
                         </p>
                     </div>
                 )}
-                
+
                 <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg z-10 w-48">
                     <h3 className="font-bold mb-2 text-sm dark:text-gray-200">Legend</h3>
                     <ul className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
