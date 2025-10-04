@@ -49,6 +49,7 @@ const PlannerPage: FC = () => {
       ${highPriorityProduct ? `- Give special consideration to fulfilling orders for the product: ${highPriorityProduct}.` : ''}
       ${specificOrderIds ? `- A user has requested that you prioritize including these specific Order IDs in your plan: ${specificOrderIds}. Please try to include them if feasible.` : ''}
       - Combining multiple orders for the same destination into a single rake is highly encouraged for efficiency, provided all hard constraints are met.
+      - The cost must be in INR following the Indian money system of lakhs, with a standard price range of 800-1000 per tonne for every 250km.
       
       **HARD CONSTRAINTS (MUST BE FOLLOWED):**
       - **Rake Availability:** Do not suggest more rakes from a base than are available.
