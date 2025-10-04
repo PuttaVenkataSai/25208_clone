@@ -1,7 +1,7 @@
 import { useRef, useState, useMemo, useEffect, FC } from 'react';
 import { useData } from '../context/DataContext';
 import { MOCK_DESTINATIONS } from '../constants';
-import { Loader2, Train, Warehouse } from 'lucide-react';
+import { Loader as Loader2, Brain as Train, Warehouse } from 'lucide-react';
 import { RakeSuggestion } from '../types';
 
 declare const L: any;
