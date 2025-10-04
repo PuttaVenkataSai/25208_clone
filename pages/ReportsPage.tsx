@@ -1,4 +1,4 @@
-import { FC, useState, useMemo } from 'react';
+import React, { FC, useState, useMemo } from 'react';
 import { Download, FileText, BarChart3, Settings, Printer, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { Order, Inventory, RakeSuggestion } from '../types';
@@ -127,6 +127,7 @@ const ReportsPage: FC = () => {
       className={`border p-4 rounded-lg flex flex-col items-center text-center cursor-pointer transition-all duration-300
         ${selectedReport === type ? 'ring-2 ring-offset-2 dark:ring-offset-gray-800' : 'hover:shadow-lg hover:scale-105'}
       `}
+      // Fix: The cast to React.CSSProperties requires the React namespace to be imported.
       style={{ borderColor: selectedReport === type ? color : 'var(--border-color, #e5e7eb)', '--tw-ring-color': color } as React.CSSProperties}
     >
       <Icon size={40} className="mb-2" style={{ color }} />
@@ -217,7 +218,7 @@ const ReportsPage: FC = () => {
 
         <div className="mt-6 text-right">
           <button
-            onClick={() => handleGenerateReport(selectedReport)}
+            onClick={() => handleGenerateReport(selectedReport as ReportType)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-sail-blue hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sail-blue"
           >
             Generate Report
