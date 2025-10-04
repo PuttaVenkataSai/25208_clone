@@ -250,7 +250,7 @@ const PlannerPage: FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center md:text-right flex-shrink-0 md:pl-6">
                     <div>
                         <p className="text-xs text-gray-500">Cost</p>
-                        <p className="font-semibold">₹{plan.cost.toLocaleString()}</p>
+                        <p className="font-semibold">₹{plan.cost.toLocaleString('en-IN')}</p>
                     </div>
                      <div>
                         <p className="text-xs text-gray-500">Utilization</p>
