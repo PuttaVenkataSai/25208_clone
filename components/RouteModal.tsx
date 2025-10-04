@@ -5,6 +5,16 @@ import { MOCK_DESTINATIONS } from '../constants';
 
 declare const mapmyindia: any;
 
+declare global {
+
+  interface Window {
+
+    mapMyIndiaLoaded?: boolean;
+
+  }
+
+}
+
 // Haversine distance formula
 const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 6371; // Radius of the Earth in km
