@@ -22,78 +22,75 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
         <style>
         {`
           @media print {
+            /* Reset the body for a clean printing slate */
+            html, body {
+              height: auto !important;
+              overflow: visible !important;
+              background: #fff !important;
+            }
+
             /* Hide everything on the page except for our modal container */
             body > *:not(.printable-area-container) {
               display: none !important;
             }
 
-            /* Reset the modal container for printing */
+            /* Make the modal container a simple block that flows with the document */
             .printable-area-container {
-              position: static !important; /* Let it flow in the document */
+              position: static !important;
+              display: block !important;
               width: 100% !important;
               height: auto !important;
-              padding: 0 !important;
               margin: 0 !important;
+              padding: 0 !important;
               overflow: visible !important;
-              background: #fff !important; /* Ensure a white background */
-              display: block !important; /* No flex/grid for the container */
             }
-            
-            /* Reset the modal content wrapper */
+
+            /* Reset the modal content box to remove shadows, borders, and screen-based height constraints */
             .report-modal-content {
+              display: block !important;
+              width: 100% !important;
+              height: auto !important;
+              max-height: none !important; /* Critical for removing vh constraint */
               box-shadow: none !important;
               border: none !important;
-              border-radius: 0 !important;
-              width: 100% !important;
-              max-width: 100% !important;
-              height: auto !important;
-              max-height: none !important; /* Remove height restrictions */
-              display: block !important;
             }
             
-            /* Make the scrollable area visible and flow */
+            /* The scrollable area's content must now be fully visible and flow across pages */
             #printable-area {
-                overflow: visible !important;
-                height: auto !important;
-                max-height: none !important;
+              overflow: visible !important;
+              height: auto !important;
+              max-height: none !important;
             }
 
-            /* Force light theme colors on all elements for consistency */
-            .report-modal-content, .report-modal-content * {
-                color: #000 !important;
-                background-color: transparent !important;
-            }
-
-            /* Hide UI controls like buttons */
+            /* Hide the buttons and other non-printable UI elements */
             .report-controls {
               display: none !important;
             }
-
-            /* Improve page break behavior for tables */
+            
+            /* Ensure consistent table rendering for print */
             table {
-              page-break-inside: auto;
               width: 100%;
               border-collapse: collapse;
+              page-break-inside: auto;
+            }
+            thead {
+              display: table-header-group; /* Repeats the table header on new pages */
             }
             tr {
               page-break-inside: avoid;
               page-break-after: auto;
             }
-            thead {
-              display: table-header-group; /* Repeat table headers on each page */
-            }
             th, td {
-                border: 1px solid #ccc; /* Add borders for clarity */
-                padding: 8px;
-            }
-            tfoot {
-                display: table-footer-group;
+              border: 1px solid #ccc;
+              padding: 8px;
+              color: #000 !important;
+              background: #fff !important;
             }
 
-            /* Page setup for A4 paper with standard margins */
+            /* Set standard page margins for printing */
             @page {
               size: A4;
-              margin: 1.5cm;
+              margin: 2cm;
             }
           }
         `}
