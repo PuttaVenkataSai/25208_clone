@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import React, { FC, useEffect } from 'react';
 import { Sailboat, Printer, X } from 'lucide-react';
 
 interface ReportPreviewModalProps {
@@ -12,88 +12,100 @@ interface ReportPreviewModalProps {
 
 const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, columns, rows, summary, onClose }) => {
 
+  useEffect(() => {
+    // This effect adds an event listener to clean up after printing is done.
+    const handleAfterPrint = () => {
+      document.body.classList.remove('is-printing');
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+
+    // The cleanup function runs if the component is unmounted.
+    return () => {
+      window.removeEventListener('afterprint', handleAfterPrint);
+      document.body.classList.remove('is-printing'); // Ensure cleanup on close
+    };
+  }, []);
+
   const handlePrint = () => {
+    // Add a class to the body to trigger our print-specific CSS rules.
+    document.body.classList.add('is-printing');
     window.print();
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4 printable-modal-wrapper">
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4" id="modal-wrapper">
         <style>
         {`
           @media print {
-            /* Hide non-essential layout components */
-            body .lg\\:relative, /* Sidebar */
-            body header,
-            body footer,
-            .report-controls /* Modal's own buttons */ {
+            /* 1. Use the body class for reliable control */
+            body.is-printing {
+              background: white !important;
+            }
+
+            /* 2. Hide specific application UI elements. These selectors target the main layout components. */
+            body.is-printing header,
+            body.is-printing footer,
+            body.is-printing .lg\\:relative, /* Targets the Sidebar container */
+            body.is-printing .report-controls {
               display: none !important;
             }
 
-            /* Reset the main layout containers from the body down to the content */
-            body, #root, #root > div, main, .printable-modal-wrapper {
-              position: static !important;
+            /* 3. Reset the entire ancestor tree of the modal to be a simple block element */
+            body.is-printing,
+            body.is-printing #root,
+            body.is-printing #root > div, /* Layout div */
+            body.is-printing main,
+            body.is-printing #modal-wrapper,
+            body.is-printing .printable-modal-box,
+            body.is-printing #printable-area {
               display: block !important;
+              position: static !important;
+              width: 100% !important;
               height: auto !important;
-              width: auto !important;
               overflow: visible !important;
-              background: white !important;
               margin: 0 !important;
               padding: 0 !important;
               border: none !important;
               box-shadow: none !important;
-            }
-
-            /* Ensure the modal content itself is ready for printing */
-            .printable-modal-box {
-              width: 100% !important;
-              max-width: none !important;
-              height: auto !important;
-              max-height: none !important;
-              box-shadow: none !important;
-              border: none !important;
+              background: transparent !important;
             }
             
-            #printable-area {
-              padding: 0 !important;
-              overflow: visible !important;
-            }
-            
-            /* Standard table formatting for print */
-            table {
+            /* 4. Fine-tune table and text for printing */
+            .is-printing table {
               width: 100%;
               border-collapse: collapse;
               page-break-inside: auto;
-              font-size: 10pt;
             }
-            thead {
-              display: table-header-group; /* This is key for multi-page tables */
+            .is-printing thead {
+              display: table-header-group; /* Ensures header repeats on each page */
             }
-            tr {
+            .is-printing tr {
               page-break-inside: avoid;
               page-break-after: auto;
             }
-            th, td {
+            .is-printing th, .is-printing td {
               border: 1px solid #ddd !important;
-              padding: 6px;
-              color: #000 !important;
-              background: #fff !important;
+              padding: 8px;
             }
             
-            /* Ensure text colors are printable */
-            h1, h2, h3, p, div, span, strong {
-               color: #000 !important;
+            /* Ensure all text is black for readability */
+            .is-printing * {
+              color: black !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
-            .text-sail-blue {
+            
+            .is-printing .text-sail-blue {
                 color: #003366 !important;
             }
-            .text-sail-orange {
+            .is-printing .text-sail-orange {
                 color: #FF6600 !important;
             }
 
             /* Define the page layout */
             @page {
               size: A4;
-              margin: 1.5cm;
+              margin: 2cm;
             }
           }
         `}
