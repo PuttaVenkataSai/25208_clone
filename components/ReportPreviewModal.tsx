@@ -21,46 +21,41 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
         <style>
         {`
           @media print {
-            /* Hide everything except our modal wrapper. This is a very aggressive approach. */
-            body > *:not(.printable-modal-wrapper),
-            #root > *:not(.printable-modal-wrapper) {
+            /* Hide non-essential layout components */
+            body .lg\\:relative, /* Sidebar */
+            body header,
+            body footer,
+            .report-controls /* Modal's own buttons */ {
               display: none !important;
             }
-            
-            /* Reset the wrapper to be a simple container */
-            .printable-modal-wrapper {
+
+            /* Reset the main layout containers from the body down to the content */
+            body, #root, #root > div, main, .printable-modal-wrapper {
               position: static !important;
-              background: white !important;
-              padding: 0 !important;
-              margin: 0 !important;
-              border: none !important;
+              display: block !important;
+              height: auto !important;
+              width: auto !important;
               overflow: visible !important;
-            }
-            
-            /* Reset the modal box itself to remove all sizing and shadow constraints */
-            .printable-modal-box {
-              box-shadow: none !important;
+              background: white !important;
+              margin: 0 !important;
+              padding: 0 !important;
               border: none !important;
+              box-shadow: none !important;
+            }
+
+            /* Ensure the modal content itself is ready for printing */
+            .printable-modal-box {
               width: 100% !important;
               max-width: none !important;
               height: auto !important;
               max-height: none !important;
-              display: block !important;
-              flex-direction: column !important; /* override flex behavior */
-            }
-
-            /* The actual content area must become visible and not scroll */
-            #printable-area {
-              overflow: visible !important;
-              height: auto !important;
-              max-height: none !important;
-              padding: 0 !important;
-              margin: 0 !important;
+              box-shadow: none !important;
+              border: none !important;
             }
             
-            /* Hide the action buttons */
-            .report-controls {
-              display: none !important;
+            #printable-area {
+              padding: 0 !important;
+              overflow: visible !important;
             }
             
             /* Standard table formatting for print */
@@ -78,7 +73,7 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
               page-break-after: auto;
             }
             th, td {
-              border: 1px solid #ccc !important;
+              border: 1px solid #ddd !important;
               padding: 6px;
               color: #000 !important;
               background: #fff !important;
