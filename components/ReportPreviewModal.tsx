@@ -20,17 +20,18 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
 
     return () => {
       window.removeEventListener('afterprint', handleAfterPrint);
-      document.body.classList.remove('is-printing'); // Cleanup on unmount
+      document.body.classList.remove('is-printing');
     };
   }, []);
 
   const handlePrint = () => {
     document.body.classList.add('is-printing');
-    window.print();
+    setTimeout(() => {
+      window.print();
+    }, 100);
   };
 
   return (
-    // The wrapper is now the primary scroll container for tall modals
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 p-4 overflow-y-auto" id="modal-wrapper">
       <style>
         {`
@@ -40,87 +41,55 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
               margin: 1.5cm;
             }
 
-            body.is-printing {
-              background: #fff !important;
+            body {
+              background: white !important;
             }
 
-            /* Hide all application chrome */
-            body.is-printing header,
-            body.is-printing footer,
-            body.is-printing .fixed.lg\\:relative, /* Sidebar container */
-            body.is-printing .report-controls {
+            .report-controls {
               display: none !important;
             }
 
-            /* Reset the entire DOM tree up to the modal */
-            body.is-printing,
-            body.is-printing #root,
-            body.is-printing #root > div,
-            body.is-printing main,
-            body.is-printing #modal-wrapper {
-              display: block !important;
+            #modal-wrapper {
               position: static !important;
-              width: auto !important;
-              height: auto !important;
-              overflow: visible !important;
-              background: transparent !important;
+              background: white !important;
               padding: 0 !important;
-              margin: 0 !important;
             }
-            
-            /* Make the modal content the only visible element */
-            body.is-printing .printable-modal-box {
-              display: block !important;
-              width: 100% !important;
-              max-width: none !important;
-              height: auto !important;
-              max-height: none !important;
-              overflow: visible !important;
+
+            .printable-modal-box {
               box-shadow: none !important;
-              border: none !important;
-              margin: 0 !important;
-              padding: 0 !important;
               border-radius: 0 !important;
             }
-            
-            body.is-printing #printable-area,
-            body.is-printing #printable-area .overflow-x-auto {
-                overflow: visible !important;
+
+            #printable-area .overflow-x-auto {
+              overflow: visible !important;
             }
-            
-            /* Fine-tune table for printing */
-            .is-printing table {
+
+            table {
               width: 100%;
               border-collapse: collapse;
               font-size: 9pt;
+              page-break-inside: auto;
             }
-            .is-printing thead {
-              display: table-header-group; /* Repeat header on each page */
+
+            thead {
+              display: table-header-group;
             }
-            .is-printing tr {
+
+            tr {
               page-break-inside: avoid;
               page-break-after: auto;
             }
-            .is-printing th, .is-printing td {
-              border: 1px solid #ccc !important;
+
+            th, td {
+              border: 1px solid #ccc;
               padding: 6px;
-              white-space: normal;
-              word-wrap: break-word;
-            }
-            
-            .is-printing * {
-              color: #000 !important;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
             }
           }
         `}
       </style>
 
-      {/* The modal box no longer has a fixed height. It will grow with content. */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl mx-auto my-8 printable-modal-box">
-        
-        {/* Action Buttons - These will be hidden on print */}
+
         <div className="p-4 bg-gray-100 dark:bg-gray-900 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 z-10 report-controls">
             <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">{title}</h2>
             <div className="flex items-center gap-3">
@@ -133,10 +102,8 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
                 </button>
             </div>
         </div>
-        
-        {/* The printable area no longer scrolls. */}
+
         <div id="printable-area" className="p-8">
-          {/* Report Header */}
           <header className="border-b-2 border-gray-800 dark:border-gray-400 pb-4 mb-6 text-gray-800 dark:text-gray-200">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
@@ -156,10 +123,8 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
             </div>
           </header>
 
-          {/* Report Body (Table) */}
           <main>
             {rows.length > 0 ? (
-                // This div handles wide tables on-screen without breaking the layout
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
                         <thead className="bg-gray-50 dark:bg-gray-700">
@@ -186,8 +151,7 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
                 </div>
             )}
           </main>
-          
-          {/* Report Footer (Summary) */}
+
           {Object.keys(summary).length > 0 && (
              <footer className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-600">
                 <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Summary</h3>
