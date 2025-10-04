@@ -4,15 +4,10 @@ import { RakeSuggestion, Inventory } from '../types';
 import { MOCK_DESTINATIONS } from '../constants';
 
 declare const mapmyindia: any;
-
 declare global {
-
   interface Window {
-
     mapMyIndiaLoaded?: boolean;
-
   }
-
 }
 
 // Haversine distance formula
@@ -73,11 +68,12 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
                 if (!isMounted) return;
 
                 setMapStatus('loaded');
+                setErrorMessage('Route visualization is a simulation. Actual rail routes may vary.');
                 
                 new mapmyindia.Marker({ position: [origin.lat, origin.lng], map: map, title: source.baseName });
                 new mapmyindia.Marker({ position: [destination.lat, destination.lng], map: map, title: plan.destination });
 
-                const drawRoute = (coordinates: number[][], isSimulated: boolean) => {
+                const drawSimulatedRoute = (coordinates: number[][]) => {
                     const currentMap = mapInstanceRef.current;
                     if (!currentMap) return;
                     if (currentMap.getSource('route')) {
@@ -93,9 +89,7 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
                         type: 'line',
                         source: 'route',
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: isSimulated 
-                            ? { 'line-color': '#0077B6', 'line-width': 4, 'line-dasharray': [2, 2] } 
-                            : { 'line-color': '#FF6600', 'line-width': 5 }
+                        paint: { 'line-color': '#0077B6', 'line-width': 4, 'line-dasharray': [2, 2] }
                     });
                     const bounds = coordinates.reduce((bounds, coord) => {
                         return bounds.extend(coord);
@@ -103,34 +97,8 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
                     currentMap.fitBounds(bounds, { padding: 80 });
                 };
 
-                let apiKey: string | undefined;
-                if (typeof process !== 'undefined' && process.env) {
-                  apiKey = process.env.MAPMYINDIA_API_KEY;
-                }
-                
-                if (!apiKey) {
-                    setErrorMessage('API key not configured. Showing simulated straight-line route.');
-                    drawRoute([[origin.lng, origin.lat], [destination.lng, destination.lat]], true);
-                    return;
-                }
-                
-                const routeUrl = `https://apis.mapmyindia.com/advancedmaps/v1/${apiKey}/route_adv/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?geometries=geojson`;
-                fetch(routeUrl)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (isMounted && data.responseCode === 200 && data.routes && data.routes.length > 0) {
-                            drawRoute(data.routes[0].geometry.coordinates, false);
-                        } else {
-                            throw new Error('Invalid route data from API.');
-                        }
-                    })
-                    .catch(error => {
-                        if (isMounted) {
-                            console.error('Error fetching MapMyIndia route:', error);
-                            setErrorMessage('Could not fetch route. Showing simulated straight-line route.');
-                            drawRoute([[origin.lng, origin.lat], [destination.lng, destination.lat]], true);
-                        }
-                    });
+                // Always draw the simulated straight-line route
+                drawSimulatedRoute([[origin.lng, origin.lat], [destination.lng, destination.lat]]);
             });
         } catch (error) {
             console.error("MapMyIndia initialization failed:", error);
@@ -142,16 +110,7 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
     };
 
     const attemptToLoadMap = () => {
-      if ((window as any).mapMyIndiaLoadError) {
-        if (isMounted) {
-          console.error("MapMyIndia library failed to load from CDN.");
-          setErrorMessage('Map service could not be loaded. Please check your internet connection.');
-          setMapStatus('error');
-        }
-        return;
-      }
-
-      if (typeof mapmyindia !== 'undefined' && window.mapMyIndiaLoaded) {
+      if (window.mapMyIndiaLoaded) {
         initializeMap();
       } else if (attempts < maxAttempts) {
         attempts++;
@@ -159,7 +118,7 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
       } else {
         if (isMounted) {
           console.error("MapMyIndia library did not load in time.");
-          setErrorMessage('Map service timed out. Please refresh the page and try again.');
+          setErrorMessage('Map service failed to load. Please check your connection and try again.');
           setMapStatus('error');
         }
       }
@@ -223,15 +182,19 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
             </div>
             <div className="relative bg-gray-200 dark:bg-gray-700 rounded-lg h-64 md:h-auto min-h-[250px]">
                 <div ref={mapContainerRef} className="absolute inset-0"></div>
-                {(mapStatus !== 'loaded' || errorMessage) && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700 bg-opacity-80 dark:bg-opacity-80 p-4 pointer-events-none">
-                        {mapStatus === 'loading' && <p className="text-gray-500 dark:text-gray-300">Loading map...</p>}
-                        {mapStatus === 'error' && <p className="text-red-600 text-center text-sm font-medium">{errorMessage}</p>}
-                        {mapStatus === 'loaded' && errorMessage && 
-                            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 text-center text-xs font-medium" role="alert">
-                                {errorMessage}
-                            </div>
-                        }
+                {mapStatus === 'loading' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-200/80 p-4 pointer-events-none">
+                        <p className="text-gray-500 dark:text-gray-300">Loading map...</p>
+                    </div>
+                )}
+                {mapStatus === 'error' && (
+                     <div className="absolute inset-0 flex items-center justify-center bg-red-100 p-4 pointer-events-none">
+                        <p className="text-red-600 text-center text-sm font-medium">{errorMessage}</p>
+                    </div>
+                )}
+                {mapStatus === 'loaded' && errorMessage && (
+                    <div className="absolute bottom-2 left-2 right-2 bg-blue-100/80 backdrop-blur-sm border-l-4 border-blue-500 text-blue-800 p-2 text-center text-xs font-medium z-10" role="alert">
+                        {errorMessage}
                     </div>
                 )}
             </div>
