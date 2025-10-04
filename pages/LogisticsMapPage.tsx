@@ -18,6 +18,7 @@ const RakeMarker: FC = () => {
 const LogisticsMapPage: FC = () => {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
+    const inventoryMarkersRef = useRef<{ [key: string]: any }>({});
     const rakeMarkersRef = useRef<{ [key: string]: any }>({});
     const popupRef = useRef<any>(null);
 
@@ -66,32 +67,48 @@ const LogisticsMapPage: FC = () => {
         if (map.getSource('highlight-route')) map.removeSource('highlight-route');
     };
 
+    // Effect for initializing the map, runs once.
     useEffect(() => {
-        if (!mapContainerRef.current || mapInstanceRef.current) return;
+        if (!mapContainerRef.current) return;
         let isMounted = true;
+        let attempts = 0;
+        const maxAttempts = 10;
+        const intervalTime = 500;
 
-        try {
-            if (typeof mapmyindia === 'undefined' || typeof mapmyindia.Map === 'undefined') {
-                throw new Error('MapMyIndia library not loaded.');
-            }
-            const map = new mapmyindia.Map(mapContainerRef.current, { center: [22, 82], zoom: 5 });
-            mapInstanceRef.current = map;
+        const initializeMap = () => {
+            try {
+                if (mapInstanceRef.current) return;
 
-            map.on('load', () => {
-                if (!isMounted) return;
-                setMapStatus('loaded');
-                inventories.forEach(inv => {
-                    const el = document.createElement('div');
-                    createRoot(el).render(<Warehouse size={28} className="text-sail-orange bg-white rounded-full p-1 shadow-md" />);
-                    new mapmyindia.Marker({ element: el, position: [inv.lat, inv.lon] }).setPopup(new mapmyindia.Popup({offset: 25}).setHTML(`<strong>${inv.baseName}</strong>`)).addTo(map);
+                const map = new mapmyindia.Map(mapContainerRef.current, { center: [22, 82], zoom: 5 });
+                mapInstanceRef.current = map;
+
+                map.on('load', () => {
+                    if (isMounted) setMapStatus('loaded');
                 });
-            });
-            
-            map.on('click', () => setSelectedRakeId(null));
+                
+                map.on('click', () => setSelectedRakeId(null));
+            } catch (error) {
+                console.error("MapMyIndia initialization failed:", error);
+                if (isMounted) setMapStatus('error');
+            }
+        };
 
-        } catch (error) {
-            console.error("MapMyIndia initialization failed:", error);
-            if (isMounted) setMapStatus('error');
+        const attemptToLoadMap = () => {
+            if (typeof mapmyindia !== 'undefined' && mapmyindia.Map) {
+                initializeMap();
+            } else if (attempts < maxAttempts) {
+                attempts++;
+                setTimeout(attemptToLoadMap, intervalTime);
+            } else {
+                if (isMounted) {
+                    console.error("MapMyIndia library did not load in time.");
+                    setMapStatus('error');
+                }
+            }
+        };
+
+        if (!mapInstanceRef.current) {
+            attemptToLoadMap();
         }
 
         return () => {
@@ -101,7 +118,26 @@ const LogisticsMapPage: FC = () => {
                 mapInstanceRef.current = null;
             }
         };
-    }, [inventories]);
+    }, []);
+
+    // Effect for drawing/updating inventory markers
+    useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (mapStatus !== 'loaded' || !map) return;
+
+        Object.values(inventoryMarkersRef.current).forEach((marker: any) => marker.remove());
+        inventoryMarkersRef.current = {};
+
+        inventories.forEach(inv => {
+            const el = document.createElement('div');
+            createRoot(el).render(<Warehouse size={28} className="text-sail-orange bg-white rounded-full p-1 shadow-md" />);
+            const marker = new mapmyindia.Marker({ element: el, position: [inv.lat, inv.lon] })
+                .setPopup(new mapmyindia.Popup({offset: 25}).setHTML(`<strong>${inv.baseName}</strong>`))
+                .addTo(map);
+            inventoryMarkersRef.current[inv.baseId] = marker;
+        });
+    }, [mapStatus, inventories]);
+
 
     useEffect(() => {
         const map = mapInstanceRef.current;
@@ -183,6 +219,14 @@ const LogisticsMapPage: FC = () => {
                 {mapStatus === 'loading' && (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-80 p-4 pointer-events-none">
                         <div className="flex items-center gap-2 text-gray-600"><Loader2 className="animate-spin" /><span>Loading map...</span></div>
+                    </div>
+                )}
+
+                {mapStatus === 'error' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-red-100 p-4 pointer-events-none">
+                        <p className="text-red-700 font-semibold text-center">
+                            Could not load map services. Please check your network connection and refresh the page.
+                        </p>
                     </div>
                 )}
                 
