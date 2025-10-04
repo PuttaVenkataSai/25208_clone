@@ -94,7 +94,7 @@ const LogisticsMapPage: FC = () => {
         };
 
         const attemptToLoadMap = () => {
-            if (typeof mapmyindia !== 'undefined' && mapmyindia.Map) {
+            if (window.mapMyIndiaLoaded) {
                 initializeMap();
             } else if (attempts < maxAttempts) {
                 attempts++;
