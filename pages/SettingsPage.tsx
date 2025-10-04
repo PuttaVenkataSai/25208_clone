@@ -1,9 +1,27 @@
-import { FC } from 'react';
-import { User, Bell, Shield, Sun, Moon } from 'lucide-react';
+import { FC, useState } from 'react';
+import { User, Bell, Shield, Sun, Moon, CheckCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const SettingsPage: FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage('');
+    }, 3000);
+  };
+
+  const handleSaveChanges = () => {
+    // In a real app, this would trigger an API call.
+    showToast('Changes saved successfully!');
+  };
+
+  const handleChangePassword = () => {
+    // In a real app, this would open a modal or navigate to a new page.
+    showToast('Password change is a placeholder in this prototype.');
+  };
 
   return (
     <div className="space-y-6">
@@ -79,7 +97,7 @@ const SettingsPage: FC = () => {
             <div>
               <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">Security</h3>
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">Manage your account's security settings.</p>
-               <button className="mt-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+               <button onClick={handleChangePassword} className="mt-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                 Change Password
               </button>
             </div>
@@ -87,11 +105,19 @@ const SettingsPage: FC = () => {
         </div>
         
         <div className="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-          <button className="px-4 py-2 bg-sail-blue text-white rounded-md hover:bg-blue-800 transition-colors">
+          <button onClick={handleSaveChanges} className="px-4 py-2 bg-sail-blue text-white rounded-md hover:bg-blue-800 transition-colors">
             Save Changes
           </button>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3 text-sm z-50 transition-opacity duration-300">
+            <CheckCircle size={18} className="text-green-400" />
+            <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 };
