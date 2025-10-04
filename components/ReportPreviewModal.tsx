@@ -22,42 +22,49 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
         <style>
         {`
           @media print {
-            /* Hide everything on the page except for the printable area and its contents */
+            /* Hide everything on the page except for our modal container */
             body > *:not(.printable-area-container) {
               display: none !important;
             }
 
-            /* Ensure the printable container takes up the whole space for printing */
+            /* Reset the modal container for printing */
             .printable-area-container {
-              position: absolute !important;
-              top: 0 !important;
-              left: 0 !important;
+              position: static !important; /* Let it flow in the document */
               width: 100% !important;
               height: auto !important;
               padding: 0 !important;
               margin: 0 !important;
               overflow: visible !important;
-              background-color: #fff !important; /* Ensure background is white */
+              background: #fff !important; /* Ensure a white background */
+              display: block !important; /* No flex/grid for the container */
             }
             
-            /* Style the report content itself for printing */
+            /* Reset the modal content wrapper */
             .report-modal-content {
               box-shadow: none !important;
               border: none !important;
               border-radius: 0 !important;
               width: 100% !important;
               max-width: 100% !important;
-              height: auto !important; /* Allow content to flow */
-              display: block !important; /* Override flex layout for natural flow */
+              height: auto !important;
+              max-height: none !important; /* Remove height restrictions */
+              display: block !important;
+            }
+            
+            /* Make the scrollable area visible and flow */
+            #printable-area {
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
             }
 
-            /* Force light theme colors on all elements within the report for print */
+            /* Force light theme colors on all elements for consistency */
             .report-modal-content, .report-modal-content * {
                 color: #000 !important;
                 background-color: transparent !important;
             }
 
-            /* Hide the UI controls (buttons) */
+            /* Hide UI controls like buttons */
             .report-controls {
               display: none !important;
             }
@@ -65,6 +72,8 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
             /* Improve page break behavior for tables */
             table {
               page-break-inside: auto;
+              width: 100%;
+              border-collapse: collapse;
             }
             tr {
               page-break-inside: avoid;
@@ -72,6 +81,10 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
             }
             thead {
               display: table-header-group; /* Repeat table headers on each page */
+            }
+            th, td {
+                border: 1px solid #ccc; /* Add borders for clarity */
+                padding: 8px;
             }
             tfoot {
                 display: table-footer-group;
