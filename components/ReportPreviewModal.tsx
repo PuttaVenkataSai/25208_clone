@@ -17,52 +17,35 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4 printable-area-container">
-        {/* We add a style tag to control printing, making it self-contained */}
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
+        {/* A more robust, self-contained style block for printing */}
         <style>
         {`
           @media print {
-            /* Reset the body for a clean printing slate */
-            html, body {
-              height: auto !important;
-              overflow: visible !important;
-              background: #fff !important;
-            }
-
-            /* Hide everything on the page except for our modal container */
-            body > *:not(.printable-area-container) {
-              display: none !important;
-            }
-
-            /* Make the modal container a simple block that flows with the document */
-            .printable-area-container {
-              position: static !important;
-              display: block !important;
-              width: 100% !important;
-              height: auto !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              overflow: visible !important;
-            }
-
-            /* Reset the modal content box to remove shadows, borders, and screen-based height constraints */
-            .report-modal-content {
-              display: block !important;
-              width: 100% !important;
-              height: auto !important;
-              max-height: none !important; /* Critical for removing vh constraint */
-              box-shadow: none !important;
-              border: none !important;
+            /* Hide EVERYTHING on the page by default */
+            body * {
+              visibility: hidden;
             }
             
-            /* The scrollable area's content must now be fully visible and flow across pages */
+            /* Make ONLY the printable area and its contents visible */
+            #printable-area, #printable-area * {
+              visibility: visible;
+            }
+            
+            /* Position the printable area at the top of the page, removing it from the modal flow */
             #printable-area {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
               overflow: visible !important;
               height: auto !important;
               max-height: none !important;
+              padding: 0 !important;
+              margin: 0 !important;
             }
-
-            /* Hide the buttons and other non-printable UI elements */
+            
+            /* Hide the modal's buttons and other controls */
             .report-controls {
               display: none !important;
             }
@@ -71,7 +54,8 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
             table {
               width: 100%;
               border-collapse: collapse;
-              page-break-inside: auto;
+              page-break-inside: auto; /* Allow tables to span pages */
+              font-size: 10pt;
             }
             thead {
               display: table-header-group; /* Repeats the table header on new pages */
@@ -82,21 +66,27 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
             }
             th, td {
               border: 1px solid #ccc;
-              padding: 8px;
+              padding: 6px;
               color: #000 !important;
               background: #fff !important;
+            }
+            h1, h2, h3, p {
+               color: #000 !important;
+            }
+            .text-sail-blue {
+                color: #003366 !important;
             }
 
             /* Set standard page margins for printing */
             @page {
               size: A4;
-              margin: 2cm;
+              margin: 1.5cm;
             }
           }
         `}
         </style>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl flex flex-col h-[90vh] report-modal-content">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl flex flex-col h-[90vh]">
         <div id="printable-area" className="flex-grow p-8 overflow-y-auto">
           {/* Report Header */}
           <header className="border-b-2 border-gray-800 dark:border-gray-400 pb-4 mb-6 text-gray-800 dark:text-gray-200">
