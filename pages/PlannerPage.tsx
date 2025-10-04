@@ -1,6 +1,6 @@
 import { useState, FC } from 'react';
 import { useData } from '../context/DataContext';
-import { BrainCircuit, Loader2, Info, Map, CheckCircle, Beaker, Send } from 'lucide-react';
+import { BrainCircuit, Loader as Loader2, Info, Map, CircleCheck as CheckCircle, Beaker, Send } from 'lucide-react';
 import { RakeSuggestion, Order, Inventory } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { MOCK_PRODUCT_WAGON_COMPATIBILITY } from '../constants';
