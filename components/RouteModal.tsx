@@ -35,16 +35,19 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    if (!mapContainerRef.current || !destCoords || mapInstanceRef.current) {
+    if (!mapContainerRef.current || !destCoords) {
       return;
     }
 
     let isMounted = true;
-    
+    let attempts = 0;
+    const maxAttempts = 10; // Try for 5 seconds
+    const intervalTime = 500;
+
     const initializeMap = () => {
         try {
-            if (typeof mapmyindia === 'undefined' || typeof mapmyindia.Map === 'undefined') {
-                throw new Error('MapMyIndia library not loaded.');
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
             }
 
             const origin = { lat: source.lat, lng: source.lon };
@@ -61,53 +64,46 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
 
                 setMapStatus('loaded');
                 
-                // Add markers for origin and destination
                 new mapmyindia.Marker({ position: [origin.lat, origin.lng], map: map, title: source.baseName });
                 new mapmyindia.Marker({ position: [destination.lat, destination.lng], map: map, title: plan.destination });
 
-                // Helper function to draw the route on the map
                 const drawRoute = (coordinates: number[][], isSimulated: boolean) => {
-                    if (!mapInstanceRef.current) return;
-                    if (map.getSource('route')) {
-                        map.removeLayer('route');
-                        map.removeSource('route');
+                    const currentMap = mapInstanceRef.current;
+                    if (!currentMap) return;
+                    if (currentMap.getSource('route')) {
+                        currentMap.removeLayer('route');
+                        currentMap.removeSource('route');
                     }
-                    map.addSource('route', {
+                    currentMap.addSource('route', {
                         type: 'geojson',
                         data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coordinates } }
                     });
-                    map.addLayer({
+                    currentMap.addLayer({
                         id: 'route',
                         type: 'line',
                         source: 'route',
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: isSimulated ? 
-                            // Style for simulated (straight) line
-                            { 'line-color': '#0077B6', 'line-width': 4, 'line-dasharray': [2, 2] } :
-                            // Style for actual API route
-                            { 'line-color': '#FF6600', 'line-width': 5 }
+                        paint: isSimulated 
+                            ? { 'line-color': '#0077B6', 'line-width': 4, 'line-dasharray': [2, 2] } 
+                            : { 'line-color': '#FF6600', 'line-width': 5 }
                     });
-                    // Fit map to the route bounds
                     const bounds = coordinates.reduce((bounds, coord) => {
                         return bounds.extend(coord);
                     }, new mapmyindia.LngLatBounds(coordinates[0], coordinates[0]));
-                    map.fitBounds(bounds, { padding: 80 });
+                    currentMap.fitBounds(bounds, { padding: 80 });
                 };
 
-                // Check for the MapMyIndia API Key from environment variables
                 let apiKey: string | undefined;
                 if (typeof process !== 'undefined' && process.env) {
-                  apiKey = process.env.MAPMYINDIA_API_KEY;
+                  apiKey = process.env.API_KEY;
                 }
                 
-                // If no API key, show a message and draw a simulated straight line
                 if (!apiKey) {
                     setErrorMessage('API key not configured. Showing simulated straight-line route.');
                     drawRoute([[origin.lng, origin.lat], [destination.lng, destination.lat]], true);
                     return;
                 }
                 
-                // If API key is present, fetch the actual route
                 const routeUrl = `https://apis.mapmyindia.com/advancedmaps/v1/${apiKey}/route_adv/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?geometries=geojson`;
                 fetch(routeUrl)
                     .then(response => response.json())
@@ -119,7 +115,6 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
                         }
                     })
                     .catch(error => {
-                        // If fetching fails, show an error and fall back to the simulated route
                         if (isMounted) {
                             console.error('Error fetching MapMyIndia route:', error);
                             setErrorMessage('Could not fetch route. Showing simulated straight-line route.');
@@ -136,9 +131,23 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
         }
     };
 
-    initializeMap();
+    const attemptToLoadMap = () => {
+      if (typeof mapmyindia !== 'undefined' && mapmyindia.Map) {
+        initializeMap();
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(attemptToLoadMap, intervalTime);
+      } else {
+        if (isMounted) {
+          console.error("MapMyIndia library did not load in time.");
+          setErrorMessage('Map service failed to load. Please check your connection and try again.');
+          setMapStatus('error');
+        }
+      }
+    };
+    
+    attemptToLoadMap();
 
-    // Cleanup function to remove the map instance when the modal closes
     return () => {
         isMounted = false;
         if (mapInstanceRef.current) {
