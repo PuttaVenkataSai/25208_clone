@@ -51,7 +51,7 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
 
     let isMounted = true;
     let attempts = 0;
-    const maxAttempts = 10; // Try for 5 seconds
+    const maxAttempts = 20; // Try for 10 seconds
     const intervalTime = 500;
 
     const initializeMap = () => {
@@ -142,7 +142,7 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
     };
 
     const attemptToLoadMap = () => {
-      if (typeof mapmyindia !== 'undefined' && mapmyindia.Map) {
+      if (window.mapMyIndiaLoaded) {
         initializeMap();
       } else if (attempts < maxAttempts) {
         attempts++;
