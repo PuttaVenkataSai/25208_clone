@@ -72,7 +72,7 @@ const LogisticsMapPage: FC = () => {
         if (!mapContainerRef.current) return;
         let isMounted = true;
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 30;
         const intervalTime = 500;
 
         const initializeMap = () => {
