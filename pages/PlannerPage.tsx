@@ -81,7 +81,7 @@ const PlannerPage: FC = () => {
       - The source base.
       - The destination.
       - A list of products and their quantities.
-      - The total cost (estimate: The cost must be in INR following the Indian money system of lakhs, with a standard price range of 800-1000 per tonne for every 250km.).
+      - The total cost (estimate:  ₹1000 per tonne for every 250km.).
       - SLA compliance as a percentage (estimate based on priority and due date).
       - Rake utilization percentage.
       - A list of order IDs fulfilled by this rake.
