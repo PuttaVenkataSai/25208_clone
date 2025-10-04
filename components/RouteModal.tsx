@@ -3,16 +3,10 @@ import { X, MapPin, Truck, Clock } from 'lucide-react';
 import { RakeSuggestion, Inventory } from '../types';
 import { MOCK_DESTINATIONS } from '../constants';
 
-declare const mapmyindia: any;
-declare global {
-  interface Window {
-    mapMyIndiaLoaded?: boolean;
-  }
-}
+declare const L: any;
 
-// Haversine distance formula
 const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const R = 6371; // Radius of the Earth in km
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a =
@@ -20,7 +14,7 @@ const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => 
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // Distance in km
+  return R * c;
 };
 
 interface RouteModalProps {
@@ -34,107 +28,101 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
   const mapInstanceRef = useRef<any>(null);
   const destCoords = MOCK_DESTINATIONS[plan.destination];
   const distance = destCoords ? getDistance(source.lat, source.lon, destCoords.lat, destCoords.lon) : 0;
-  const estimatedTime = Math.round(distance / 50); // Assuming avg speed of 50km/h for rail
-  
+  const estimatedTime = Math.round(distance / 50);
+
   const [mapStatus, setMapStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
-  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    if (!mapContainerRef.current || !destCoords) {
+    if (!mapContainerRef.current || !destCoords || mapInstanceRef.current) {
       return;
     }
 
-    let isMounted = true;
-    let attempts = 0;
-    const maxAttempts = 20; // Try for 10 seconds
-    const intervalTime = 500;
-
-    const initializeMap = () => {
-        try {
-            if (mapInstanceRef.current) {
-                mapInstanceRef.current.remove();
-            }
-
-            const origin = { lat: source.lat, lng: source.lon };
-            const destination = { lat: destCoords.lat, lng: destCoords.lon };
-
-            const map = new mapmyindia.Map(mapContainerRef.current, {
-                center: [(origin.lat + destination.lat) / 2, (origin.lng + destination.lng) / 2],
-                zoom: 5,
-            });
-            mapInstanceRef.current = map;
-
-            map.on('load', () => {
-                if (!isMounted) return;
-
-                setMapStatus('loaded');
-                setErrorMessage('Route visualization is a simulation. Actual rail routes may vary.');
-                
-                new mapmyindia.Marker({ position: [origin.lat, origin.lng], map: map, title: source.baseName });
-                new mapmyindia.Marker({ position: [destination.lat, destination.lng], map: map, title: plan.destination });
-
-                const drawSimulatedRoute = (coordinates: number[][]) => {
-                    const currentMap = mapInstanceRef.current;
-                    if (!currentMap) return;
-                    if (currentMap.getSource('route')) {
-                        currentMap.removeLayer('route');
-                        currentMap.removeSource('route');
-                    }
-                    currentMap.addSource('route', {
-                        type: 'geojson',
-                        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coordinates } }
-                    });
-                    currentMap.addLayer({
-                        id: 'route',
-                        type: 'line',
-                        source: 'route',
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: { 'line-color': '#0077B6', 'line-width': 4, 'line-dasharray': [2, 2] }
-                    });
-                    const bounds = coordinates.reduce((bounds, coord) => {
-                        return bounds.extend(coord);
-                    }, new mapmyindia.LngLatBounds(coordinates[0], coordinates[0]));
-                    currentMap.fitBounds(bounds, { padding: 80 });
-                };
-
-                // Always draw the simulated straight-line route
-                drawSimulatedRoute([[origin.lng, origin.lat], [destination.lng, destination.lat]]);
-            });
-        } catch (error) {
-            console.error("MapMyIndia initialization failed:", error);
-            if (isMounted) {
-                setErrorMessage((error as Error).message || 'Failed to initialize the map.');
-                setMapStatus('error');
-            }
-        }
-    };
-
-    const attemptToLoadMap = () => {
-      if (window.mapMyIndiaLoaded) {
-        initializeMap();
-      } else if (attempts < maxAttempts) {
-        attempts++;
-        setTimeout(attemptToLoadMap, intervalTime);
-      } else {
-        if (isMounted) {
-          console.error("MapMyIndia library did not load in time.");
-          setErrorMessage('Map service failed to load. Please check your connection and try again.');
-          setMapStatus('error');
-        }
+    try {
+      if (typeof L === 'undefined') {
+        setMapStatus('error');
+        return;
       }
-    };
-    
-    attemptToLoadMap();
+
+      const origin = { lat: source.lat, lng: source.lon };
+      const destination = { lat: destCoords.lat, lng: destCoords.lon };
+
+      const map = L.map(mapContainerRef.current, {
+        center: [(origin.lat + destination.lat) / 2, (origin.lng + destination.lng) / 2],
+        zoom: 5,
+        zoomControl: true
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(map);
+
+      mapInstanceRef.current = map;
+
+      const originIcon = L.divIcon({
+        html: `<div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #16a34a; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>`,
+        className: '',
+        iconSize: [28, 28],
+        iconAnchor: [14, 28]
+      });
+
+      const destIcon = L.divIcon({
+        html: `<div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #dc2626; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>`,
+        className: '',
+        iconSize: [28, 28],
+        iconAnchor: [14, 28]
+      });
+
+      L.marker([origin.lat, origin.lng], { icon: originIcon })
+        .bindPopup(`<strong>${source.baseName}</strong><br/>Origin`)
+        .addTo(map);
+
+      L.marker([destination.lat, destination.lng], { icon: destIcon })
+        .bindPopup(`<strong>${plan.destination}</strong><br/>Destination`)
+        .addTo(map);
+
+      const latlngs = [
+        [origin.lat, origin.lng],
+        [destination.lat, destination.lng]
+      ];
+
+      L.polyline(latlngs, {
+        color: '#0077B6',
+        weight: 4,
+        dashArray: '10, 10',
+        opacity: 0.7
+      }).addTo(map);
+
+      const bounds = L.latLngBounds(latlngs);
+      map.fitBounds(bounds, { padding: [50, 50] });
+
+      setTimeout(() => {
+        map.invalidateSize();
+        setMapStatus('loaded');
+      }, 100);
+
+    } catch (error) {
+      console.error("Map initialization failed:", error);
+      setMapStatus('error');
+    }
 
     return () => {
-        isMounted = false;
-        if (mapInstanceRef.current) {
-            mapInstanceRef.current.remove();
-            mapInstanceRef.current = null;
-        }
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
     };
   }, [source, plan, destCoords]);
-
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4" onClick={onClose}>
@@ -180,7 +168,7 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
                 </div>
               </div>
             </div>
-            <div className="relative bg-gray-200 dark:bg-gray-700 rounded-lg h-64 md:h-auto min-h-[250px]">
+            <div className="relative bg-gray-200 dark:bg-gray-700 rounded-lg h-64 md:h-auto min-h-[250px] overflow-hidden">
                 <div ref={mapContainerRef} className="absolute inset-0"></div>
                 {mapStatus === 'loading' && (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-200/80 p-4 pointer-events-none">
@@ -189,12 +177,12 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
                 )}
                 {mapStatus === 'error' && (
                      <div className="absolute inset-0 flex items-center justify-center bg-red-100 p-4 pointer-events-none">
-                        <p className="text-red-600 text-center text-sm font-medium">{errorMessage}</p>
+                        <p className="text-red-600 text-center text-sm font-medium">Failed to load map</p>
                     </div>
                 )}
-                {mapStatus === 'loaded' && errorMessage && (
+                {mapStatus === 'loaded' && (
                     <div className="absolute bottom-2 left-2 right-2 bg-blue-100/80 backdrop-blur-sm border-l-4 border-blue-500 text-blue-800 p-2 text-center text-xs font-medium z-10" role="alert">
-                        {errorMessage}
+                        Route visualization is a simulation. Actual rail routes may vary.
                     </div>
                 )}
             </div>
