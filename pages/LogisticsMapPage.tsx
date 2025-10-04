@@ -7,6 +7,15 @@ import { RakeSuggestion } from '../types';
 
 declare const mapmyindia: any;
 
+declare global {
+
+    interface Window {
+
+        mapMyIndiaLoaded?: boolean;
+
+    }
+
+}
 const RakeMarker: FC = () => {
     return (
         <div className="cursor-pointer">
