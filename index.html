@@ -30,9 +30,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- MapMyIndia GL JS and CSS -->
-    <link rel="stylesheet" href="https://apis.mapmyindia.com/mmi-gl/v2.0/mapmyindia-gl.css">
-    <script src="https://apis.mapmyindia.com/mmi-gl/v2.0/mapmyindia-gl.js"
-      onload="window.mapMyIndiaLoaded = true;"></script>
+    <link rel="stylesheet" href="https://apis.mapmyindia.com/advancedmaps/api/v2.0.0/mmi-vector-map.css">
+    <script src="https://apis.mapmyindia.com/advancedmaps/api/v2.0.0/mmi-vector-map.js"
+      onload="window.mapMyIndiaLoaded = true;"
+      onerror="console.error('Failed to load MapMyIndia library'); window.mapMyIndiaLoadError = true;"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',

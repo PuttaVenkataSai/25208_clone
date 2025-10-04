@@ -105,7 +105,7 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
 
                 let apiKey: string | undefined;
                 if (typeof process !== 'undefined' && process.env) {
-                  apiKey = process.env.API_KEY;
+                  apiKey = process.env.MAPMYINDIA_API_KEY;
                 }
                 
                 if (!apiKey) {
@@ -142,7 +142,16 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
     };
 
     const attemptToLoadMap = () => {
-      if (window.mapMyIndiaLoaded) {
+      if ((window as any).mapMyIndiaLoadError) {
+        if (isMounted) {
+          console.error("MapMyIndia library failed to load from CDN.");
+          setErrorMessage('Map service could not be loaded. Please check your internet connection.');
+          setMapStatus('error');
+        }
+        return;
+      }
+
+      if (typeof mapmyindia !== 'undefined' && window.mapMyIndiaLoaded) {
         initializeMap();
       } else if (attempts < maxAttempts) {
         attempts++;
@@ -150,7 +159,7 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
       } else {
         if (isMounted) {
           console.error("MapMyIndia library did not load in time.");
-          setErrorMessage('Map service failed to load. Please check your connection and try again.');
+          setErrorMessage('Map service timed out. Please refresh the page and try again.');
           setMapStatus('error');
         }
       }
