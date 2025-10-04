@@ -97,7 +97,7 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
                 // Check for the MapMyIndia API Key from environment variables
                 let apiKey: string | undefined;
                 if (typeof process !== 'undefined' && process.env) {
-                  apiKey = process.env.API_KEY;
+                  apiKey = process.env.MAPMYINDIA_API_KEY;
                 }
                 
                 // If no API key, show a message and draw a simulated straight line
