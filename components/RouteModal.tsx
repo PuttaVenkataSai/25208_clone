@@ -91,20 +91,48 @@ const RouteModal: FC<RouteModalProps> = ({ plan, source, onClose }) => {
         .bindPopup(`<strong>${plan.destination}</strong><br/>Destination`)
         .addTo(map);
 
-      const latlngs = [
-        [origin.lat, origin.lng],
-        [destination.lat, destination.lng]
-      ];
+      const fetchRoute = async () => {
+        try {
+          const response = await fetch(
+            `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`
+          );
+          const data = await response.json();
 
-      L.polyline(latlngs, {
-        color: '#0077B6',
-        weight: 4,
-        dashArray: '10, 10',
-        opacity: 0.7
-      }).addTo(map);
+          if (data.routes && data.routes.length > 0) {
+            const coordinates = data.routes[0].geometry.coordinates;
+            const latlngs = coordinates.map((coord: number[]) => [coord[1], coord[0]]);
 
-      const bounds = L.latLngBounds(latlngs);
-      map.fitBounds(bounds, { padding: [50, 50] });
+            L.polyline(latlngs, {
+              color: '#0077B6',
+              weight: 4,
+              opacity: 0.8
+            }).addTo(map);
+
+            const bounds = L.latLngBounds(latlngs);
+            map.fitBounds(bounds, { padding: [50, 50] });
+          } else {
+            throw new Error('No route found');
+          }
+        } catch (error) {
+          console.warn('Failed to fetch route, using direct line:', error);
+          const latlngs = [
+            [origin.lat, origin.lng],
+            [destination.lat, destination.lng]
+          ];
+
+          L.polyline(latlngs, {
+            color: '#0077B6',
+            weight: 4,
+            dashArray: '10, 10',
+            opacity: 0.7
+          }).addTo(map);
+
+          const bounds = L.latLngBounds(latlngs);
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+      };
+
+      fetchRoute();
 
       setTimeout(() => {
         map.invalidateSize();

@@ -21,7 +21,7 @@ const LogisticsMapPage: FC = () => {
         return rakePlans.filter(plan => plan.status === 'dispatched');
     }, [rakePlans]);
 
-    const drawHighlightRoute = (plan: RakeSuggestion) => {
+    const drawHighlightRoute = async (plan: RakeSuggestion) => {
         const map = mapInstanceRef.current;
         if (!map) return;
 
@@ -34,17 +34,38 @@ const LogisticsMapPage: FC = () => {
             map.removeLayer(routeLayerRef.current);
         }
 
-        const latlngs = [
-            [source.lat, source.lon],
-            [destCoords.lat, destCoords.lon]
-        ];
+        try {
+            const response = await fetch(
+                `https://router.project-osrm.org/route/v1/driving/${source.lon},${source.lat};${destCoords.lon},${destCoords.lat}?overview=full&geometries=geojson`
+            );
+            const data = await response.json();
 
-        routeLayerRef.current = L.polyline(latlngs, {
-            color: '#FF6600',
-            weight: 3,
-            dashArray: '10, 10',
-            opacity: 0.8
-        }).addTo(map);
+            if (data.routes && data.routes.length > 0) {
+                const coordinates = data.routes[0].geometry.coordinates;
+                const latlngs = coordinates.map((coord: number[]) => [coord[1], coord[0]]);
+
+                routeLayerRef.current = L.polyline(latlngs, {
+                    color: '#FF6600',
+                    weight: 3,
+                    opacity: 0.8
+                }).addTo(map);
+            } else {
+                throw new Error('No route found');
+            }
+        } catch (error) {
+            console.warn('Failed to fetch route, using direct line:', error);
+            const latlngs = [
+                [source.lat, source.lon],
+                [destCoords.lat, destCoords.lon]
+            ];
+
+            routeLayerRef.current = L.polyline(latlngs, {
+                color: '#FF6600',
+                weight: 3,
+                dashArray: '10, 10',
+                opacity: 0.8
+            }).addTo(map);
+        }
     };
 
     const removeHighlightRoute = () => {
