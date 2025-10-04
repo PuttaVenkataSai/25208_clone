@@ -81,7 +81,7 @@ const PlannerPage: FC = () => {
       - The source base.
       - The destination.
       - A list of products and their quantities.
-      - The total cost (estimate:  ₹1000 per tonne for every 250km.).
+      - The total cost (estimate: $50 per ton).
       - SLA compliance as a percentage (estimate based on priority and due date).
       - Rake utilization percentage.
       - A list of order IDs fulfilled by this rake.
@@ -141,7 +141,12 @@ const PlannerPage: FC = () => {
 
       const plansWithStatus: RakeSuggestion[] = parsedPlans.map(p => ({...p, status: 'suggested' }));
       
-      setRakePlans(plansWithStatus);
+      setRakePlans([]); // Clear previous plans
+      plansWithStatus.forEach((plan, index) => {
+          setTimeout(() => {
+              setRakePlans(prev => [...prev, plan]);
+          }, index * 300);
+      });
 
       if (plansWithStatus.length > 0) {
         const message = simulationParams.rakeCapacity || simulationParams.specificOrderIds ? `Generated ${plansWithStatus.length} new rake suggestions based on simulation.` : `Generated ${plansWithStatus.length} new rake suggestions.`;
@@ -246,7 +251,7 @@ const PlannerPage: FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center md:text-right flex-shrink-0 md:pl-6">
                     <div>
                         <p className="text-xs text-gray-500">Cost</p>
-                        <p className="font-semibold">₹{plan.cost.toLocaleString('en-IN')}</p>
+                        <p className="font-semibold">${plan.cost.toLocaleString()}</p>
                     </div>
                      <div>
                         <p className="text-xs text-gray-500">Utilization</p>
