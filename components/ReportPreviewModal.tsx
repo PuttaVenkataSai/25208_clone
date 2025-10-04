@@ -17,27 +17,40 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
-        {/* A more robust, self-contained style block for printing */}
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4 printable-modal-wrapper">
         <style>
         {`
           @media print {
-            /* Hide EVERYTHING on the page by default */
-            body * {
-              visibility: hidden;
+            /* Hide everything except our modal wrapper. This is a very aggressive approach. */
+            body > *:not(.printable-modal-wrapper),
+            #root > *:not(.printable-modal-wrapper) {
+              display: none !important;
             }
             
-            /* Make ONLY the printable area and its contents visible */
-            #printable-area, #printable-area * {
-              visibility: visible;
+            /* Reset the wrapper to be a simple container */
+            .printable-modal-wrapper {
+              position: static !important;
+              background: white !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              border: none !important;
+              overflow: visible !important;
             }
             
-            /* Position the printable area at the top of the page, removing it from the modal flow */
+            /* Reset the modal box itself to remove all sizing and shadow constraints */
+            .printable-modal-box {
+              box-shadow: none !important;
+              border: none !important;
+              width: 100% !important;
+              max-width: none !important;
+              height: auto !important;
+              max-height: none !important;
+              display: block !important;
+              flex-direction: column !important; /* override flex behavior */
+            }
+
+            /* The actual content area must become visible and not scroll */
             #printable-area {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
               overflow: visible !important;
               height: auto !important;
               max-height: none !important;
@@ -45,39 +58,44 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
               margin: 0 !important;
             }
             
-            /* Hide the modal's buttons and other controls */
+            /* Hide the action buttons */
             .report-controls {
               display: none !important;
             }
             
-            /* Ensure consistent table rendering for print */
+            /* Standard table formatting for print */
             table {
               width: 100%;
               border-collapse: collapse;
-              page-break-inside: auto; /* Allow tables to span pages */
+              page-break-inside: auto;
               font-size: 10pt;
             }
             thead {
-              display: table-header-group; /* Repeats the table header on new pages */
+              display: table-header-group; /* This is key for multi-page tables */
             }
             tr {
               page-break-inside: avoid;
               page-break-after: auto;
             }
             th, td {
-              border: 1px solid #ccc;
+              border: 1px solid #ccc !important;
               padding: 6px;
               color: #000 !important;
               background: #fff !important;
             }
-            h1, h2, h3, p {
+            
+            /* Ensure text colors are printable */
+            h1, h2, h3, p, div, span, strong {
                color: #000 !important;
             }
             .text-sail-blue {
                 color: #003366 !important;
             }
+            .text-sail-orange {
+                color: #FF6600 !important;
+            }
 
-            /* Set standard page margins for printing */
+            /* Define the page layout */
             @page {
               size: A4;
               margin: 1.5cm;
@@ -86,7 +104,7 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
         `}
         </style>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl flex flex-col h-[90vh]">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl flex flex-col h-[90vh] printable-modal-box">
         <div id="printable-area" className="flex-grow p-8 overflow-y-auto">
           {/* Report Header */}
           <header className="border-b-2 border-gray-800 dark:border-gray-400 pb-4 mb-6 text-gray-800 dark:text-gray-200">
