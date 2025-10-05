@@ -1,5 +1,5 @@
 import { FC, useState } from 'react';
-import { User, Bell, Shield, Sun, Moon, CheckCircle } from 'lucide-react';
+import { User, Bell, Shield, Sun, Moon, CircleCheck as CheckCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
