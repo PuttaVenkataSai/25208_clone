@@ -10,10 +10,10 @@ const LoginPage: FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    const success = login(username, password);
+    const success = await login(username, password);
     if (success) {
       navigate('/dashboard');
     } else {
