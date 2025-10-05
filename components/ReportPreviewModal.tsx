@@ -1,5 +1,5 @@
 import React, { FC, useEffect } from 'react';
-import { Sailboat, Printer, X } from 'lucide-react';
+import { Sailboat, X } from 'lucide-react';
 
 interface ReportPreviewModalProps {
   title: string;
@@ -93,10 +93,6 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ title, filtersUsed, c
         <div className="p-4 bg-gray-100 dark:bg-gray-900 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 z-10 report-controls">
             <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">{title}</h2>
             <div className="flex items-center gap-3">
-                 <button onClick={handlePrint} className="flex items-center px-4 py-2 bg-sail-blue text-white rounded-md hover:bg-blue-800 transition-colors">
-                    <Printer size={16} className="mr-2"/>
-                    Print
-                </button>
                  <button onClick={onClose} className="flex items-center p-2 bg-gray-200 dark:bg-gray-600 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500">
                     <X size={20}/>
                 </button>

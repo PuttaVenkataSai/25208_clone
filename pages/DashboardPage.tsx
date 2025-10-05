@@ -10,19 +10,30 @@ const DashboardPage: FC = () => {
   const { orders, inventories } = useData();
   const { user } = useAuth();
 
+  const filteredOrders = orders.filter(order => {
+    if (!user) return false;
+    if (user.role === Role.ADMIN) return true;
+    if (user.role === Role.BASE_MANAGER) {
+      return order.assignedManagerId === user.id;
+    }
+    return false;
+  });
+
   const totalStock = inventories
     .flatMap(inv => inv.products)
     .reduce((acc, product) => acc + product.quantity, 0);
 
-  const pendingOrders = orders.length;
+  const pendingOrders = filteredOrders.filter(o => o.status === 'Pending').length;
 
-  const upcomingDeadlines = orders.filter(order => {
+  const upcomingDeadlines = filteredOrders.filter(order => {
     const dueDate = new Date(order.dueDate);
     const today = new Date();
     const diffTime = dueDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7 && diffDays > 0;
+    return diffDays <= 7 && diffDays > 0 && order.status === 'Pending';
   }).length;
+
+  const highPriorityOrders = filteredOrders.filter(order => order.priority === 'High' && order.status === 'Pending').length;
 
   const chartData = inventories.map(inv => ({
     name: inv.baseName.replace(' Steel Plant', ''),
@@ -42,7 +53,62 @@ const DashboardPage: FC = () => {
         <KpiCard title="Total Available Stock (Tons)" value={totalStock.toLocaleString()} icon={Package} color="#003366" />
         <KpiCard title="Pending Orders" value={pendingOrders.toString()} icon={Truck} color="#FF6600" />
         <KpiCard title="Upcoming Deadlines (7 days)" value={upcomingDeadlines.toString()} icon={Clock} color="#0077B6" />
-        <KpiCard title="Avg. Rake Utilization" value="87%" icon={Percent} color="#FDB813" />
+        <KpiCard title="High Priority Orders" value={highPriorityOrders.toString()} icon={Percent} color="#FDB813" />
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Important Events</h2>
+        <div className="space-y-3">
+          {filteredOrders
+            .filter(order => {
+              const dueDate = new Date(order.dueDate);
+              const today = new Date();
+              const diffTime = dueDate.getTime() - today.getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              return (diffDays <= 7 && order.status === 'Pending') || order.priority === 'High';
+            })
+            .slice(0, 5)
+            .map(order => {
+              const dueDate = new Date(order.dueDate);
+              const today = new Date();
+              const diffTime = dueDate.getTime() - today.getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              const isUrgent = diffDays <= 7 && order.status === 'Pending';
+              const isHighPriority = order.priority === 'High' && order.status === 'Pending';
+
+              return (
+                <div key={order.id} className={`p-4 rounded-lg border-l-4 ${
+                  isUrgent ? 'border-red-500 bg-red-50 dark:bg-red-900/20' :
+                  isHighPriority ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' :
+                  'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                }`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-200">{order.id} - {order.customerName}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Destination: {order.destination}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Due: {order.dueDate} ({diffDays > 0 ? `${diffDays} days` : 'Overdue'})</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        order.priority === 'High' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                        order.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      }`}>{order.priority}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          {filteredOrders.filter(order => {
+            const dueDate = new Date(order.dueDate);
+            const today = new Date();
+            const diffTime = dueDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return (diffDays <= 7 && order.status === 'Pending') || order.priority === 'High';
+          }).length === 0 && (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No urgent events at this time.</p>
+          )}
+        </div>
       </div>
       
       {user?.role !== Role.BASE_MANAGER && (
