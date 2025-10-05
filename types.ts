@@ -15,6 +15,7 @@ export interface User {
 
 export interface Order {
   id: string;
+  order_number?: string;
   customerName: string;
   products: { name: string; quantity: number }[];
   priority: 'High' | 'Medium' | 'Low';

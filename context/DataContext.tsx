@@ -2,6 +2,7 @@ import { createContext, useState, useCallback, useContext, FC, ReactNode, useEff
 import { Order, Inventory, InventoryItem, InventoryUpdate, Notification, RakeSuggestion, Role } from '../types';
 import { MOCK_ORDERS, MOCK_INVENTORY, MOCK_DESTINATIONS } from '../constants';
 import { useAuth } from './AuthContext';
+import { supabase } from '../lib/supabase';
 
 interface DataContextType {
   orders: Order[];
@@ -44,6 +45,48 @@ export const DataProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [inventories, setInventories] = useState<Inventory[]>(MOCK_INVENTORY);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [rakePlans, setRakePlans] = useState<RakeSuggestion[]>([]);
+
+  const saveRakePlansToDatabase = useCallback(async (plans: RakeSuggestion[]) => {
+    if (!user) return;
+
+    try {
+      for (const plan of plans) {
+        const { error } = await supabase
+          .from('generated_plans')
+          .insert({
+            plan_name: `Rake ${plan.rakeId} - ${plan.base} to ${plan.destination}`,
+            plan_type: 'route_optimization',
+            parameters: {
+              rakeId: plan.rakeId,
+              base: plan.base,
+              destination: plan.destination,
+            },
+            results: {
+              products: plan.products,
+              cost: plan.cost,
+              slaCompliance: plan.slaCompliance,
+              utilization: plan.utilization,
+              fulfilledOrderIds: plan.fulfilledOrderIds,
+              status: plan.status,
+            },
+            status: 'approved',
+            confidence_score: plan.slaCompliance,
+            created_by: user.id,
+          });
+
+        if (error) {
+          console.error('Error saving plan to database:', error);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save plans:', err);
+    }
+  }, [user]);
+
+  const setRakePlansWithDb = useCallback((plans: RakeSuggestion[]) => {
+    setRakePlans(plans);
+    saveRakePlansToDatabase(plans);
+  }, [saveRakePlansToDatabase]);
   const processedArrivals = useRef(new Set());
 
   const addOrders = (newOrders: Order[]) => {
@@ -230,7 +273,7 @@ export const DataProvider: FC<{ children: ReactNode }> = ({ children }) => {
   }, [rakePlans]);
 
   return (
-    <DataContext.Provider value={{ orders, inventories, notifications, rakePlans, setRakePlans, addOrders, updateInventory, updateOrderStatus, addNotification, markNotificationAsRead, updateOrderPriority, autoUpdatePriorities, markAllAsRead, dispatchRake, updateOrderAssignedManager, updateRakeAvailability }}>
+    <DataContext.Provider value={{ orders, inventories, notifications, rakePlans, setRakePlans: setRakePlansWithDb, addOrders, updateInventory, updateOrderStatus, addNotification, markNotificationAsRead, updateOrderPriority, autoUpdatePriorities, markAllAsRead, dispatchRake, updateOrderAssignedManager, updateRakeAvailability }}>
       {children}
     </DataContext.Provider>
   );
