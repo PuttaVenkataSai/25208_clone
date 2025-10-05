@@ -1,7 +1,8 @@
 import { useState, FC } from 'react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import { BrainCircuit, Loader as Loader2, Info, Map, CircleCheck as CheckCircle, Beaker, Send } from 'lucide-react';
-import { RakeSuggestion, Order, Inventory } from '../types';
+import { RakeSuggestion, Order, Inventory, Role } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { MOCK_PRODUCT_WAGON_COMPATIBILITY } from '../constants';
 import RouteModal from '../components/RouteModal';
@@ -17,6 +18,7 @@ export interface SimulationParams {
 
 const PlannerPage: FC = () => {
   const { orders, inventories, rakePlans, setRakePlans, dispatchRake, addNotification } = useData();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -225,13 +227,27 @@ const PlannerPage: FC = () => {
 
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-gray-800">Generated Rake Suggestions</h2>
-        {rakePlans.length === 0 && !isLoading ? (
+        {rakePlans.filter(plan => {
+          if (!user) return false;
+          if (user.role === Role.ADMIN) return true;
+          if (user.role === Role.BASE_MANAGER) {
+            return plan.base === user.baseName;
+          }
+          return false;
+        }).length === 0 && !isLoading ? (
           <div className="text-center bg-white p-12 rounded-lg shadow-md">
             <p className="text-gray-500">No rake plans have been generated yet.</p>
             <p className="text-sm text-gray-400 mt-2">Click "Generate AI Plan" or "Simulate" to get started.</p>
           </div>
         ) : (
-          rakePlans.map(plan => (
+          rakePlans.filter(plan => {
+            if (!user) return false;
+            if (user.role === Role.ADMIN) return true;
+            if (user.role === Role.BASE_MANAGER) {
+              return plan.base === user.baseName;
+            }
+            return false;
+          }).map(plan => (
             <div key={plan.rakeId} className={`bg-white p-4 rounded-lg shadow-md border-l-4 ${plan.status === 'dispatched' ? 'border-blue-500' : plan.status === 'arrived' ? 'border-green-500' : 'border-sail-blue'}`}>
               <div className="flex flex-col md:flex-row justify-between md:items-center">
                 <div className="flex-1 mb-4 md:mb-0">

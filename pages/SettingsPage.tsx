@@ -1,9 +1,11 @@
 import { FC, useState } from 'react';
 import { User, Bell, Shield, Sun, Moon, CheckCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 const SettingsPage: FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [toastMessage, setToastMessage] = useState('');
 
   const showToast = (message: string) => {
@@ -54,16 +56,26 @@ const SettingsPage: FC = () => {
             <User className="h-6 w-6 text-sail-blue mt-1" />
             <div>
               <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">Profile</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">This information will be displayed publicly so be careful what you share.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">Your profile information.</p>
               <div className="space-y-3 mt-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
-                  <input type="text" className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-sail-orange focus:border-sail-orange" defaultValue="admin_user" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                  <input type="text" className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-sail-orange focus:border-sail-orange" value={user?.name || ''} readOnly />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                  <input type="email" className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-sail-orange focus:border-sail-orange" defaultValue="admin@sail.co.in" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
+                  <input type="text" className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-sail-orange focus:border-sail-orange" value={user?.username || ''} readOnly />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+                  <input type="text" className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-sail-orange focus:border-sail-orange" value={user?.role || ''} readOnly />
+                </div>
+                {user?.baseId && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Assigned Plant</label>
+                    <input type="text" className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-sail-orange focus:border-sail-orange" value={user?.baseName || ''} readOnly />
+                  </div>
+                )}
               </div>
             </div>
           </div>
