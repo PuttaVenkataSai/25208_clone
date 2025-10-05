@@ -83,7 +83,7 @@ const PlannerPage: FC = () => {
       - The source base.
       - The destination.
       - A list of products and their quantities.
-      - The total cost (estimate: ₹1000 per Ton for every 250km).
+      - The total cost (estimate: For every 250km of distance covered, the cost increases by ₹1000 per ton of material transported, with an initial cost of 0.).
       - SLA compliance as a percentage (estimate based on priority and due date).
       - Rake utilization percentage.
       - A list of order IDs fulfilled by this rake.
