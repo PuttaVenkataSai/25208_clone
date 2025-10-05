@@ -223,7 +223,7 @@ const OrdersPage: FC = () => {
                     const totalQuantity = order.products.reduce((acc, p) => acc + p.quantity, 0);
                     return (
                         <tr key={order.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.order_number || order.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customerName}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs">
                           <span className="font-semibold">{totalQuantity.toLocaleString()} T</span> total
