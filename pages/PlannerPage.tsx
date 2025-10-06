@@ -73,10 +73,17 @@ const PlannerPage: FC = () => {
       **3. Product-Wagon Compatibility Matrix:**
       ${JSON.stringify(MOCK_PRODUCT_WAGON_COMPATIBILITY, null, 2)}
 
+      **HARD CONSTRAINTS (MUST FOLLOW):**
+      - **CRITICAL: ALL orders must be fulfilled.** Generate enough rakes to cover every single order in the list above.
+      - Each rake can carry a maximum of 4000 tons total.
+      - Products must be compatible with available wagons.
+      - Inventory must be available at the source base.
+
       **SOFT CONSTRAINTS (TRY TO OPTIMIZE):**
       - **High Utilization:** Aim for rake utilization close to 100%.
       - **Priority Fulfillment:** Fulfill 'High' priority orders first.
       - **Meet Deadlines:** Prioritize orders with closer due dates.
+      - **Consolidation:** Combine orders going to the same destination when possible.
 
       **TASK:**
       Generate a list of rake suggestions. For each suggestion, provide:
