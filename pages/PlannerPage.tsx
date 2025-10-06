@@ -84,7 +84,7 @@ const PlannerPage: FC = () => {
       - The source base.
       - The destination.
       - A list of products and their quantities.
-      - The total cost (estimate: For every 250km of distance covered, the cost increases by ₹1000 per ton of material transported, with an initial total cost of 0.).
+      - The total cost (estimate: For every 250km of distance covered, the cost increases by ₹800 - ₹1000 depending on the type of material being transported per ton of material transported, with an initial total cost of 0.).
       - SLA compliance as a percentage (estimate based on priority and due date).
       - Rake utilization percentage (Each rake carries a max capacity of 4000T. Percentage calculation will be the fraction of how much is utilised multiplied by 100.).
       - A list of order IDs fulfilled by this rake.
