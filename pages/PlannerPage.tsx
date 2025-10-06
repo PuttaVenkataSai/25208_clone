@@ -149,7 +149,7 @@ const PlannerPage: FC = () => {
 
       const plansWithStatus: RakeSuggestion[] = parsedPlans.map(p => ({...p, status: 'suggested' }));
 
-      setRakePlans([]);
+      setRakePlans(prev => prev.filter(p => p.status === 'dispatched' || p.status === 'arrived'));
       plansWithStatus.forEach((plan, index) => {
           setTimeout(() => {
               setRakePlans(prev => [...prev, plan]);
