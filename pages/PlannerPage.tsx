@@ -26,7 +26,8 @@ const PlannerPage: FC = () => {
   const [selectedPlanForExplanation, setSelectedPlanForExplanation] = useState<RakeSuggestion | null>(null);
   const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
 
-  const pendingOrders = orders.filter(o => o.status === 'Pending');
+  const fulfilledOrderIds = new Set(rakePlans.flatMap(plan => plan.fulfilledOrderIds));
+  const pendingOrders = orders.filter(o => o.status === 'Pending' && !fulfilledOrderIds.has(o.id));
 
   const generatePlan = async (simulationParams: SimulationParams = {}) => {
     setIsLoading(true);
@@ -143,6 +144,7 @@ const PlannerPage: FC = () => {
 
       const plansWithStatus: RakeSuggestion[] = parsedPlans.map(p => ({...p, status: 'suggested' }));
 
+      setRakePlans([]);
       plansWithStatus.forEach((plan, index) => {
           setTimeout(() => {
               setRakePlans(prev => [...prev, plan]);
