@@ -27,7 +27,8 @@ const PlannerPage: FC = () => {
   const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
 
   const fulfilledOrderIds = new Set(rakePlans.flatMap(plan => plan.fulfilledOrderIds));
-  const pendingOrders = orders.filter(o => o.status === 'Pending' && !fulfilledOrderIds.has(o.id));
+  const pendingOrders = orders.filter(o => o.status === 'Pending');
+  const unplannedOrders = pendingOrders.filter(o => !fulfilledOrderIds.has(o.id));
 
   const generatePlan = async (simulationParams: SimulationParams = {}) => {
     setIsLoading(true);
@@ -64,8 +65,10 @@ const PlannerPage: FC = () => {
 
       **INPUT DATA:**
 
-      **1. Pending Orders (Each order can have multiple products):**
-      ${JSON.stringify(pendingOrders, null, 2)}
+      **1. Unplanned Orders (Each order can have multiple products):**
+      ${JSON.stringify(unplannedOrders, null, 2)}
+
+      **NOTE:** Only generate plans for the orders listed above. Do NOT regenerate plans for orders that have already been accounted for.
 
       **2. Current Inventory and Rake Availability per Base:**
       ${JSON.stringify(inventories.map(({history, ...rest}) => rest), null, 2)}
@@ -156,10 +159,10 @@ const PlannerPage: FC = () => {
 
       const plansWithStatus: RakeSuggestion[] = parsedPlans.map(p => ({...p, status: 'suggested' }));
 
-      setRakePlans(prev => prev.filter(p => p.status === 'dispatched' || p.status === 'arrived'));
+      setRakePlans(prev => [...prev.filter(p => p.status !== 'suggested')]);
       plansWithStatus.forEach((plan, index) => {
           setTimeout(() => {
-              setRakePlans(prev => [...prev, plan]);
+              setRakePlans(prev => [plan, ...prev]);
           }, index * 300);
       });
 
@@ -200,7 +203,7 @@ const PlannerPage: FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-            <h1 className="text-3xl font-bold text-gray-800">Rake Formation Planner</h1>
+            <h1 className="text-3xl font-bold text-sail-orange">Rake Formation Planner</h1>
             <p className="text-gray-500 mt-1">Generate optimal rake plans based on pending orders and inventory.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -240,7 +243,7 @@ const PlannerPage: FC = () => {
       )}
 
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-gray-800">Generated Rake Suggestions</h2>
+        <h2 className="text-2xl font-bold text-sail-orange">Generated Rake Suggestions</h2>
         {rakePlans.filter(plan => {
           if (!user) return false;
           if (user.role === Role.ADMIN) return true;
