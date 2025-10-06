@@ -84,7 +84,12 @@ const PlannerPage: FC = () => {
       - The source base.
       - The destination.
       - A list of products and their quantities.
-      - The total cost (estimate: For every 250km of distance covered, the cost increases by ₹800 - ₹1000 depending on the type of material being transported per ton of material transported, with an initial total cost of 0.).
+      - The total cost in INR using this formula:
+        * Calculate distance between source and destination in km
+        * Cost = (Total weight in tons) × (Distance in km / 250) × (Rate per ton per 250km)
+        * Rate per ton per 250km ranges from ₹800 to ₹1000 depending on material type
+        * Example: If transporting 2000 tons over 500km at ₹900/ton/250km: Cost = 2000 × (500/250) × 900 = ₹3,600,000
+        * IMPORTANT: The cost must be in lakhs or crores for realistic long-distance transportation
       - SLA compliance as a percentage (estimate based on priority and due date).
       - Rake utilization percentage (Each rake carries a max capacity of 4000T. Percentage calculation will be the fraction of how much is utilised multiplied by 100.).
       - A list of order IDs fulfilled by this rake.
